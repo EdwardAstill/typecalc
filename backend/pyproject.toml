@@ -7,7 +7,9 @@ authors = [
     { name = "Edward Astill", email = "edwardast.ll@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "sympy>=1.14.0",
+]
 
 [project.scripts]
 typecalc = "typecalc:main"

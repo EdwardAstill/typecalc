@@ -1,0 +1,21 @@
+EQUATIONS
+A + B = 10
+A = 6
+B = SOLVE(B)
+
+TEXT
+This is some text to display
+
+THis should be converted to a CST
+list of blocks the blocks for now are
+
+EQUATION_BLOCK
+
+TEXT_BLOCK
+
+block objects have a type and a list
+
+
+EQUATIONS
+   -
+
