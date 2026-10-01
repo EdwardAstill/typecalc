@@ -1,8 +1,14 @@
+"""Document containers for the block text format.
+
+A Document is the parse result for text with ``EQUATIONS``/``TEXT`` blocks.
+The engine only ever sees the Equations extracted from it.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .expressions import Expression
+from ..ast.equation import Equation
 
 
 @dataclass
@@ -20,14 +26,6 @@ class TextBlock:
 
 
 type Block = EquationBlock | TextBlock
-
-
-@dataclass
-class Equation:
-    """An ``lhs = rhs`` statement; each side is an Expression tree."""
-
-    left: Expression
-    right: Expression
 
 
 @dataclass

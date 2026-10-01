@@ -5,12 +5,12 @@ import unittest
 
 from sympy import Rational
 
-from typecalc import parse_document, solve_variables
+from typecalc.text import parse_document, solve_document
 
 
 class SolveVariablesTests(unittest.TestCase):
     def solve(self, equations):
-        return solve_variables(parse_document("EQUATIONS\n" + equations))
+        return solve_document(parse_document("EQUATIONS\n" + equations))
 
     def test_solves_across_blocks_without_changing_the_document(self):
         document = parse_document(
@@ -20,7 +20,7 @@ class SolveVariablesTests(unittest.TestCase):
         )
         original = deepcopy(document)
 
-        self.assertEqual(solve_variables(document), {"A": 6, "B": 4})
+        self.assertEqual(solve_document(document), {"A": 6, "B": 4})
         self.assertEqual(document, original)
 
     def test_solves_simultaneous_equations(self):
@@ -83,7 +83,7 @@ class SolveVariablesTests(unittest.TestCase):
     def test_empty_and_text_only_documents_have_no_variable_values(self):
         for source in ("", "TEXT\nOnly text.", "EQUATIONS\n1 = 1\n1 + 1 = 2"):
             with self.subTest(source=source):
-                self.assertEqual(solve_variables(parse_document(source)), {})
+                self.assertEqual(solve_document(parse_document(source)), {})
 
     def test_solve_requires_one_argument(self):
         for expression in ("SOLVE()", "SOLVE(A, B)"):

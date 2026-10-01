@@ -6,8 +6,8 @@
 
 import re
 
-from ..ast.document import Block, Document, EquationBlock, TextBlock
-from .expression_parser import parse_equation
+from ..parser import parse_equation
+from .document import Block, Document, EquationBlock, TextBlock
 
 
 def parse_document(source: str) -> Document:

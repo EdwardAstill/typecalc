@@ -1,5 +1,5 @@
 
-from typecalc import parse_document
+from typecalc.text import parse_document
 from pathlib import Path
 
 parent_dir = Path(__file__).parent

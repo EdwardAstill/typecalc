@@ -1,0 +1,21 @@
+[project]
+name = "typecalc-tui"
+version = "0.1.0"
+description = "Textual interface for the typecalc engine"
+authors = [
+    { name = "Edward Astill", email = "edwardast.ll@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "textual>=8.2.8",
+    "typecalc",
+]
+
+[tool.uv.sources]
+typecalc = { workspace = true }
+[project.scripts]
+typecalc = "typecalc_tui.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"

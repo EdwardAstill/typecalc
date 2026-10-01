@@ -3,7 +3,8 @@
 from copy import deepcopy
 import unittest
 
-from typecalc import Number, evaluate_document, parse_document
+from typecalc import Number
+from typecalc.text import evaluate_document, parse_document
 
 
 class EvaluateDocumentTests(unittest.TestCase):

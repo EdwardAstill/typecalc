@@ -1,10 +1,12 @@
-"""Extract equations from a document AST and solve variable values with SymPy."""
+"""Solve engine equations for their variable values with SymPy."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import sympy
 
-from ..ast.document import Document, EquationBlock
+from ..ast.equation import Equation
 from ..ast.expressions import BinaryOperation, Expression, FunctionCall, Number, Symbol
 from ..functions import apply_function
 
@@ -64,12 +66,11 @@ def _to_sympy(
             raise ValueError(f"Unknown expression node: {expression!r}")
 
 
-def solve_variables(document: Document) -> dict[str, sympy.Expr]:
-    """Return the document's uniquely determined variable values.
+def _solve_equations(equations: Sequence[Equation]) -> dict[str, sympy.Expr]:
+    """Return the equations' uniquely determined variable values.
 
-    Text is ignored and the input AST is left unchanged. SOLVE(expression)
-    contributes the same constraint as expression, so B = SOLVE(B) becomes
-    the identity B = B.
+    SOLVE(expression) contributes the same constraint as expression, so
+    B = SOLVE(B) becomes the identity B = B.
 
     Values remain SymPy numbers, preserving fractions and exact roots.
     Raise ValueError for inconsistent equations, unresolved variables, or
@@ -77,24 +78,20 @@ def solve_variables(document: Document) -> dict[str, sympy.Expr]:
     it cannot solve a system; that does not mean the system has no solution.
     """
     variables: dict[str, sympy.Symbol] = {}
-    equations: list[sympy.Expr] = []
+    constraints: list[sympy.Expr] = []
 
-    for block in document.blocks:
-        if not isinstance(block, EquationBlock):
-            continue
+    for equation in equations:
+        left = _to_sympy(equation.left, variables)
+        right = _to_sympy(equation.right, variables)
+        constraint = left - right
 
-        for equation in block.equations:
-            left = _to_sympy(equation.left, variables)
-            right = _to_sympy(equation.right, variables)
-            constraint = left - right
+        # Identities add no information. Keep the original expression
+        # for SymPy's solve checks when it is a real constraint.
+        if sympy.simplify(constraint) != 0:
+            constraints.append(constraint)
 
-            # Identities add no information. Keep the original expression
-            # for SymPy's solve checks when it is a real constraint.
-            if sympy.simplify(constraint) != 0:
-                equations.append(constraint)
-
-    if equations:
-        solutions = sympy.solve(equations, list(variables.values()), dict=True)
+    if constraints:
+        solutions = sympy.solve(constraints, list(variables.values()), dict=True)
 
         if not solutions:
             raise ValueError("Equations have no solution.")

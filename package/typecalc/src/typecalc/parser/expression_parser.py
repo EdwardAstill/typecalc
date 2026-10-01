@@ -7,7 +7,7 @@
 # "A + B * 2" parse as  A + (B * 2)  instead of (A + B) * 2.
 import re
 
-from ..ast.document import Equation
+from ..ast.equation import Equation
 from ..ast.expressions import BinaryOperation, Expression, FunctionCall, Number, Symbol
 from .tokenizer import tokenize
 

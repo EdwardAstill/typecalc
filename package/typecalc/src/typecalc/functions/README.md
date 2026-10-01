@@ -12,6 +12,18 @@ document evaluator uses that same conversion and replaces calls with numeric
 
 `SOLVE` remains an evaluation marker handled by the converter: its mathematical
 meaning is its argument, so `B = SOLVE(B)` adds no constraint.
+It is not required by the public Python API: `typecalc.solve` accepts equation
+strings and returns every solved variable as a finite real float. For example:
+
+```python
+from typecalc import solve
+
+print(solve(["A = DIFF(X^2 | X=10)", "A + B = 10"]))
+# {'A': 20.0, 'B': -10.0}
+```
+
+The `EQUATIONS` headers in the examples below belong to the optional document
+format, not the input to `solve`.
 
 ## DIFF
 
