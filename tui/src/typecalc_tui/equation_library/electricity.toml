@@ -1,0 +1,60 @@
+# Choose the formulas relevant to your problem; this is not one circuit to solve.
+# Use consistent SI units. Reuse a variable only for the same physical quantity.
+# These formulas describe DC circuits and ideal components, not general AC power.
+
+name = "Electricity"
+description = "DC circuits, electrical energy, resistance, and ideal capacitors."
+
+[equations]
+    # Ohm's law for an ohmic resistor.
+    ohms_law = "V = I * R"
+
+    # Electrical power transferred to a component; passive sign convention.
+    power = "P = V * I"
+
+    # Power dissipated in an ohmic resistor.
+    resistor_power_current = "P = I^2 * R"
+
+    # Power dissipated in an ohmic resistor with nonzero resistance.
+    resistor_power_voltage = "P = V^2 / R"
+
+    # Charge transferred by a constant current over an elapsed time.
+    transferred_charge = "Q = I * t"
+
+    # Energy transferred at constant power over an elapsed time.
+    transferred_energy = "E = P * t"
+
+    # Uniform conductor with constant resistivity and cross-sectional area.
+    conductor_resistance = "R = rho * L / A"
+
+    # Equivalent resistance of two resistors in series.
+    series_resistance = "R_series = R_1 + R_2"
+
+    # Equivalent resistance of two nonzero resistors in parallel.
+    parallel_resistance = "1 / R_parallel = 1 / R_1 + 1 / R_2"
+
+    # Charge on one plate of an ideal linear capacitor with constant capacitance.
+    capacitor_charge = "Q_cap = C * V_cap"
+
+    # Energy stored in that capacitor.
+    capacitor_energy = "E_cap = C * V_cap^2 / 2"
+
+[variables]
+V = "Voltage across the component (V)"
+I = "Current entering the component's positive-voltage terminal (A)"
+R = "Component resistance (ohm)"
+P = "Power absorbed by the component (W)"
+Q = "Charge transferred (C)"
+t = "Elapsed time (s)"
+E = "Energy transferred (J)"
+rho = "Electrical resistivity (ohm*m)"
+L = "Conductor length (m)"
+A = "Conductor cross-sectional area (m^2)"
+R_1 = "First resistor's resistance (ohm)"
+R_2 = "Second resistor's resistance (ohm)"
+R_series = "Equivalent series resistance (ohm)"
+R_parallel = "Equivalent parallel resistance (ohm)"
+Q_cap = "Charge on the capacitor plate at potential V_cap relative to the other (C)"
+C = "Capacitance (F)"
+V_cap = "Voltage across the capacitor (V)"
+E_cap = "Energy stored in the capacitor (J)"

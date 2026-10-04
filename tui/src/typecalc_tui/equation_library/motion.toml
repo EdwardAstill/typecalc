@@ -1,0 +1,39 @@
+# Choose the formulas relevant to your problem; this is not one system to solve.
+# Use consistent SI units. Velocities, acceleration, displacement, force, and
+# momentum are signed quantities along the same chosen axis.
+
+name = "Motion"
+description = "One-dimensional motion, net force, momentum, and kinetic energy."
+
+[equations]
+    # Constant acceleration: final velocity.
+    final_velocity = "v = u + a * t"
+
+    # Constant acceleration: displacement from initial velocity and time.
+    displacement = "s = u * t + a * t^2 / 2"
+
+    # Constant acceleration: relation without elapsed time.
+    velocity_without_time = "v^2 = u^2 + 2 * a * s"
+
+    # Constant acceleration: displacement from average velocity.
+    average_velocity_displacement = "s = (u + v) * t / 2"
+
+    # Newton's second law for constant mass, in an inertial frame.
+    net_force = "F_net = m * a"
+
+    # Momentum at the final velocity, at nonrelativistic speeds.
+    momentum = "p = m * v"
+
+    # Translational kinetic energy at the final velocity, at nonrelativistic speeds.
+    kinetic_energy = "E_k = m * v^2 / 2"
+
+[variables]
+u = "Initial velocity (m/s)"
+v = "Final velocity (m/s)"
+a = "Acceleration (m/s^2)"
+t = "Elapsed time (s)"
+s = "Displacement (m)"
+F_net = "Net force (N)"
+m = "Mass (kg)"
+p = "Momentum (kg*m/s)"
+E_k = "Translational kinetic energy (J)"

@@ -44,20 +44,26 @@ print(json.dumps(solve(["A = 1/3"]), allow_nan=False))
 
 ## Command line
 
-`typecalc` is the executable from the `typecalc-tui` app. With a file it
-solves from the terminal; with no arguments it launches the TUI:
+See the [installation guide](../README.md) to install the library or CLI
+from GitHub, or run them from a local clone.
+
+`typecalc` is the executable from the `typecalc-cli` package. Pass a file path:
 
 ```sh
-typecalc equations.txt    # one equation per line; prints "A = 6.0", "B = 4.0"
-typecalc                  # launches the TUI
+typecalc equations.txt
+typecalc --text 'A = 6'
 ```
 
-The file holds one equation per line; blank lines are skipped and parse
-errors name the 1-based line. Values print sorted by variable name, errors
-go to stderr, and failures exit with code 1.
+The CLI reads the UTF-8 file, or takes literal text with `--text`, and passes
+its lines directly to `solve`. File and text inputs are mutually exclusive.
+Use one equation per line; blank lines are allowed. Successful results print
+to stdout as `name = value`, sorted by variable name, with exit code 0. An
+empty file succeeds without output. File, decoding, parsing, and solver
+errors print to stderr with exit code 1; missing arguments return exit code 2.
+Parse errors name the original 1-based line within the supplied input.
 
-The TUI itself is `apps/tui/src/typecalc_tui/app.py`: a Textual `App`
-subclass named `TypecalcApp`. Create that file and `typecalc` launches it.
+The entry point is `cli/src/typecalc_cli/cli.py`. The experimental TUI and
+its equation catalog remain under `tui`, outside the active workspace.
 
 ## Document structure
 
@@ -213,6 +219,5 @@ print(evaluated.blocks[1].text)                      # The values are shown abov
 
 Rendering the evaluated AST as LaTeX or plots is planned. See
 [the backend guide](backend.md) for the layer layout and
-[the function notes](../packages/typecalc/src/typecalc/functions/README.md) for `DIFF`
+[the function notes](../package/typecalc/src/typecalc/functions/README.md) for `DIFF`
 syntax and how to add another function.
-

@@ -3,9 +3,18 @@
 ## Workspace layout
 
 The repository is a uv workspace. The engine is a library
-(`packages/typecalc`); frontends are separate apps that import it
-(`apps/tui` today). Install boundaries: the library depends only on sympy,
-and nobody installing it pulls Textual.
+(`package/typecalc`); frontends are separate apps that import it
+(`cli` today). The library depends only on SymPy, and the CLI depends only
+on the library. The experimental TUI remains under `tui`, outside the
+active workspace.
+
+The CLI's `typecalc = { workspace = true }` source uses the local engine
+as an editable dependency. See the [installation guide](../README.md)
+for GitHub and local installation commands.
+
+The `typecalc` command in `cli/src/typecalc_cli/cli.py` reads a UTF-8 file or
+literal `--text` input, passes its lines to `solve`, and prints sorted variable values. Errors go to
+stderr with a nonzero exit code. It imports the engine directly.
 
 ## Two layers
 
@@ -76,7 +85,7 @@ propagates when it cannot solve a system.
 calls replaced by numeric results; solving is the caller's job.
 
 Mathematical functions live in `typecalc/functions/`. See the
-[function notes](../packages/typecalc/src/typecalc/functions/README.md) for `DIFF` syntax
+[function notes](../package/typecalc/src/typecalc/functions/README.md) for `DIFF` syntax
 and how to add another function.
 
 ## Text layer
