@@ -39,8 +39,9 @@ print(values)  # {'A': 6.0, 'B': 4.0}
 ```
 
 No block headers or `SOLVE` markers are needed. Blank strings are ignored.
-The input is unchanged, equation order does not affect the solution, and
-each call is independent.
+The input is unchanged, and equation order does not affect deterministic
+solutions. Each occurrence of `RAND()` draws a fresh sample per solve and
+keeps it fixed for that solve.
 
 `solve` returns `dict[str, float]`, not encoded JSON. It rejects complex
 or out-of-range results with `ValueError`, so successful results support
@@ -82,7 +83,7 @@ and multiple solutions raise `ValueError`. SymPy's `NotImplementedError`
 propagates when it cannot solve a system.
 
 Mathematical functions live in `typecalc/functions/`. See the
-[function notes](../package/typecalc/src/typecalc/functions/README.md) for `DIFF` syntax
+[function notes](../package/typecalc/src/typecalc/functions/README.md) for function syntax
 and how to add another function.
 
 ## Text layer

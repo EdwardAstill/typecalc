@@ -92,8 +92,8 @@ class SolveVariablesTests(unittest.TestCase):
                     self.solve("A = " + expression)
 
     def test_rejects_unsupported_functions(self):
-        with self.assertRaisesRegex(ValueError, "Unsupported function.*SIN"):
-            self.solve("A = SIN(B)")
+        with self.assertRaisesRegex(ValueError, "Unsupported function.*UNKNOWN"):
+            self.solve("A = UNKNOWN(B)")
 
     def test_solver_limitations_are_distinct_from_inconsistent_equations(self):
         with self.assertRaises(NotImplementedError):
