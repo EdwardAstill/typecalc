@@ -21,7 +21,7 @@ stderr with a nonzero exit code. It imports the engine directly.
 The typecalc library has two layers with a one-way dependency:
 
 - `typecalc` — the **engine**: equation syntax, AST nodes, mathematical
-  functions, solving, and evaluation. Its public `solve` accepts a sequence
+  functions, and solving. Its public `solve` accepts a sequence
   of equation strings and returns JSON-ready variable values.
 - `typecalc.text` — the **document converter**: handles `EQUATIONS`/`TEXT`
   blocks, prose, and document order. It uses the engine; the engine does
@@ -70,7 +70,7 @@ symbols are the leaves.
 An `Equation` (`ast/equation.py`) holds a left and a right expression — one
 `lhs = rhs` statement.
 
-### Solving and evaluation
+### Solving
 
 The public `solve` parses the strings and calls the internal
 `_solve_equations(equations)` in `solver/sympy_variable_solver.py`. This
@@ -80,9 +80,6 @@ happens only at the public API boundary.
 A unique solution is required: unresolved variables, inconsistent equations,
 and multiple solutions raise `ValueError`. SymPy's `NotImplementedError`
 propagates when it cannot solve a system.
-
-`evaluate_equations(equations, values)` returns new equations with function
-calls replaced by numeric results; solving is the caller's job.
 
 Mathematical functions live in `typecalc/functions/`. See the
 [function notes](../package/typecalc/src/typecalc/functions/README.md) for `DIFF` syntax
@@ -104,16 +101,15 @@ each block names its type (`EQUATIONS` or `TEXT`):
    kept as text.
 
 `Document`, `EquationBlock`, and `TextBlock` live in `text/document.py`;
-the solver ignores text blocks and the evaluator preserves them.
+the solver ignores text blocks.
 
 `document_equations(document)` flattens the blocks into engine equations;
-`solve_document` and `evaluate_document` reuse the internal AST solver without
+`solve_document` reuses the internal AST solver without
 reparsing or prematurely converting its exact SymPy results to floats.
-`solve_document` returns `dict[str, sympy.Expr]`; `evaluate_document` replaces
-function calls with float-valued `Number` nodes and preserves the document.
+It returns `dict[str, sympy.Expr]` and leaves the document unchanged.
 An equation has one outer `=`. Calls can contain their own evaluation point,
 such as `DIFF(X^2 | X=10)`.
 
 ## Rendering
 
-Rendering the evaluated AST as LaTeX or plots is planned.
+Rendering equations and solved values as LaTeX or plots is planned.

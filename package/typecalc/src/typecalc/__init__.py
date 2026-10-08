@@ -6,7 +6,6 @@ values. Document formats and prose belong to typecalc.text.
 
 from .ast.equation import Equation
 from .ast.expressions import BinaryOperation, Expression, FunctionCall, Number, Symbol
-from .solver.evaluator import evaluate_equations
 from .solver import solve
 
 __all__ = [
@@ -16,6 +15,5 @@ __all__ = [
     "FunctionCall",
     "Number",
     "Symbol",
-    "evaluate_equations",
     "solve",
 ]

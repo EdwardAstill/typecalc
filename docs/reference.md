@@ -85,8 +85,7 @@ This is some text to display.
 Currently supported block types:
 
 - `EQUATIONS` — every remaining non-empty line is one equation.
-- `TEXT` — remaining lines are kept as plain text. The solver ignores them;
-  the evaluator preserves them.
+- `TEXT` — remaining lines are kept as plain text. The solver ignores them.
 
 Consecutive blank lines count as a single separator. Leading and trailing
 whitespace of the document is ignored.
@@ -106,8 +105,7 @@ The solver collects every equation and finds values for all mentioned
 variables. It requires a unique solution: underdetermined variables raise an
 error listing them.
 
-For document evaluation, `SOLVE(X)` marks an expression for numeric
-substitution without adding a constraint. `B = SOLVE(B)` means `B = B`,
+`SOLVE(X)` denotes the same expression as `X`. `B = SOLVE(B)` means `B = B`,
 so only your other equations constrain `B`:
 
 ```text
@@ -153,8 +151,7 @@ gives `A = 12`.
 
 ### SOLVE
 
-`SOLVE` requires exactly one argument and denotes the same expression; it is
-an evaluation marker, not a mathematical operation (see Solving above).
+`SOLVE` requires exactly one argument and denotes the same expression.
 It is optional when calling the Python `solve` function, which already
 returns every variable's value.
 
@@ -166,39 +163,35 @@ returns every variable's value.
   values.
 - Symbolic-only results are not supported: a derivative retaining free
   variables is an error unless you supply their values.
-- Evaluated results are floats, so fractions and roots may be approximate.
+- `solve` returns floats, so fractions and roots may be approximate.
   Results that cannot be stored as a finite real number raise an error.
 
 ## Lower-level Python API
 
-Most callers only need `from typecalc import solve`. For AST inspection or
-evaluation, `typecalc.parser` exposes `parse_equation`, `parse_expression`,
+Most callers only need `from typecalc import solve`. For AST inspection,
+`typecalc.parser` exposes `parse_equation`, `parse_expression`,
 and `parse_equations`:
 
 ```python
-from typecalc import evaluate_equations, solve
 from typecalc.parser import parse_equations
 
-rows = ["A = 6", "B = SOLVE(A + 1)"]
+rows = ["A = 6", "B = A + 1"]
 equations = parse_equations(rows)
-evaluated = evaluate_equations(equations, solve(rows))
-print(evaluated[1].right.value)  # 7.0
+print(equations[0].left.name)  # A
 ```
 
-`evaluate_equations` replaces function calls in a new equation AST, leaving
-surrounding expressions and the input unchanged. `solve` accepts strings,
-not AST nodes; AST-based symbolic solving is an internal engine detail.
+`solve` accepts strings, not AST nodes; AST-based symbolic solving is an
+internal engine detail.
 
-Document-specific APIs live in `typecalc.text`: `parse_document`,
-`solve_document`, and `evaluate_document`. `solve_document` retains exact
+Document-specific APIs live in `typecalc.text`: `parse_document`
+and `solve_document`. `solve_document` retains exact
 SymPy values for document processing, unlike `solve`'s JSON-ready floats.
-`evaluate_document` solves once and replaces calls in a new document,
-preserving block order, surrounding expressions, and text.
+The input document is unchanged.
 
 ## Full document example
 
 ```python
-from typecalc.text import parse_document, solve_document, evaluate_document
+from typecalc.text import parse_document, solve_document
 
 text = """EQUATIONS
 A + B = 10
@@ -210,14 +203,12 @@ The values are shown above."""
 
 document = parse_document(text)
 print(solve_document(document))    # {'A': 6, 'B': 4}
-evaluated = evaluate_document(document)
-print(evaluated.blocks[0].equations[2].right.value)  # 4.0
-print(evaluated.blocks[1].text)                      # The values are shown above.
+print(document.blocks[1].text)     # The values are shown above.
 ```
 
 ## Rendering and planned features
 
-Rendering the evaluated AST as LaTeX or plots is planned. See
+Rendering equations and solved values as LaTeX or plots is planned. See
 [the backend guide](backend.md) for the layer layout and
 [the function notes](../package/typecalc/src/typecalc/functions/README.md) for `DIFF`
 syntax and how to add another function.

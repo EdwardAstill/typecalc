@@ -46,7 +46,7 @@ def _to_sympy(
                     raise ValueError(f"Unsupported operator: {operator!r}")
 
         case FunctionCall(name="SOLVE", arguments=[argument]):
-            # SOLVE requests evaluation; it denotes the same expression.
+            # SOLVE denotes the same expression as its argument.
             return _to_sympy(argument, variables)
 
         case FunctionCall(name="SOLVE"):

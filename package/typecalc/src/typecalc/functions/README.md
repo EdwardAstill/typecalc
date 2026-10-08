@@ -6,12 +6,10 @@ validates its arguments, and returns a SymPy expression. Function names in
 this registry are case-insensitive; variable names remain case-sensitive.
 
 The parser records calls as `FunctionCall` nodes. The solver recursively
-converts their arguments and dispatches them through the registry. The
-document evaluator uses that same conversion and replaces calls with numeric
-`Number` nodes after substituting the solved variable values.
+converts their arguments and dispatches them through the registry.
 
-`SOLVE` remains an evaluation marker handled by the converter: its mathematical
-meaning is its argument, so `B = SOLVE(B)` adds no constraint.
+`SOLVE` is handled by the converter: its mathematical meaning is its argument,
+so `B = SOLVE(B)` adds no constraint.
 It is not required by the public Python API: `typecalc.solve` accepts equation
 strings and returns every solved variable as a finite real float. For example:
 
@@ -61,5 +59,5 @@ The third positional argument is an evaluation point, not a derivative order.
 
 The solver still requires uniquely determined variable values. If a derivative
 retains free variables, provide their values through equations or an evaluation
-point. Symbolic-only document results are not supported yet. Evaluated AST
-results use floats, so fractions and roots can be approximate.
+point. Symbolic-only document results are not supported yet. The public `solve`
+function returns floats, so fractions and roots can be approximate.
