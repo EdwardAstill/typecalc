@@ -11,9 +11,9 @@ from dataclasses import dataclass
 
 @dataclass
 class Number:
-    """A literal numeric value, e.g. ``10`` or ``3.14``."""
+    """A numeric literal stored as source text to preserve its exact value."""
 
-    value: float
+    value: str
 
 
 @dataclass
@@ -39,7 +39,7 @@ class BinaryOperation:
 
 @dataclass
 class FunctionCall:
-    """A call to a named function with arguments, e.g. ``SOLVE(B)``."""
+    """A call to a named function with arguments, e.g. ``SIN(B)``."""
 
     name: str
     arguments: list[Expression]

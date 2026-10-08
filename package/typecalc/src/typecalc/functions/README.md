@@ -1,17 +1,18 @@
 # Functions
 
-Put each mathematical function in its own module here and add its name to
-`FUNCTIONS` in `__init__.py`. A handler accepts a list of SymPy expressions,
-validates its arguments, and returns a SymPy expression. Function names in
-this registry are case-insensitive; variable names remain case-sensitive.
+Register functions in `FUNCTIONS` in `__init__.py`. Each entry pairs accepted
+argument counts with a callable, for example `"SIN": ((1,), sympy.sin)`.
+Use SymPy functions directly where possible; keep modules here for custom
+behavior such as calculus syntax, validation, randomness, and rounding.
+`apply_function` checks the count and passes SymPy expressions as positional
+arguments. Function names are case-insensitive; variable names remain
+case-sensitive.
 
 The parser records calls as `FunctionCall` nodes. The solver recursively
 converts their arguments and dispatches them through the registry.
 
-`SOLVE` is handled by the converter: its mathematical meaning is its argument,
-so `B = SOLVE(B)` adds no constraint.
-It is not required by the public Python API: `typecalc.solve` accepts equation
-strings and returns every solved variable as a finite real float. For example:
+`typecalc.solve` accepts equation strings and returns every solved variable
+as a finite real float. For example:
 
 ```python
 from typecalc import solve
@@ -22,6 +23,9 @@ print(solve(["A = DIFF(X^2 | X=10)", "A + B = 10"]))
 
 The examples below use one equation per line. Pass each line as a string in
 the list supplied to `solve`, or save the lines in a file for the CLI.
+
+Handlers can validate known arguments, but symbolic simplification may discard
+domain restrictions. See the [solver limitations](../../../../../docs/reference.md#limitations).
 
 ## DIFF
 
@@ -38,7 +42,6 @@ equation for X:
 ```text
 A + B = 10
 A = DIFF(X^2 | X=10)
-B = SOLVE(B)
 ```
 
 This finds `A = 20` and `B = -10`. The parser represents the point form as
@@ -54,9 +57,8 @@ A = DIFF(DIFF(X^3, X) | X=2)
 This finds `A = 12`. Multiplication must be explicit, for example `C*X^2`.
 The third positional argument is an evaluation point, not a derivative order.
 
-The solver still requires uniquely determined variable values. If a derivative
-retains free variables, provide their values through equations or an evaluation
-point. Symbolic-only results are not supported. The public `solve`
+If a derivative retains free variables, provide their values through equations
+or an evaluation point. Symbolic-only results are not supported. The public `solve`
 function returns floats, so fractions and roots can be approximate.
 
 ## INTEGRATE

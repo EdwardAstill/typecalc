@@ -3,20 +3,16 @@
 import sympy
 
 
-def diff(arguments: list[sympy.Expr]) -> sympy.Expr:
+def diff(
+    expression: sympy.Expr, variable: sympy.Expr, point: sympy.Expr | None = None
+) -> sympy.Expr:
     """DIFF(expression, variable[, point]); nest calls for higher derivatives."""
-    if len(arguments) not in (2, 3):
-        raise ValueError(
-            "DIFF requires an expression and a variable, with an optional point."
-        )
-
-    expression, variable = arguments[:2]
     if not isinstance(variable, sympy.Symbol):
         raise ValueError("DIFF variable must be a symbol.")
 
     result = sympy.diff(expression, variable)
-    if len(arguments) == 3:
+    if point is not None:
         # Differentiate before substituting the evaluation point.
-        result = result.subs(variable, arguments[2])
+        result = result.subs(variable, point)
 
     return result

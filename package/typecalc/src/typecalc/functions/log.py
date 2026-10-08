@@ -3,12 +3,8 @@
 import sympy
 
 
-def log(arguments: list[sympy.Expr]) -> sympy.Expr:
+def log(value: sympy.Expr, base: sympy.Expr) -> sympy.Expr:
     """LOG(value, base), with positive inputs and a base other than one."""
-    if len(arguments) != 2:
-        raise ValueError("LOG requires a value and a base.")
-
-    value, base = arguments
     if value.is_positive is False:
         raise ValueError("LOG requires a positive value.")
     if base.is_positive is False or base == 1:

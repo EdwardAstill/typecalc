@@ -17,7 +17,7 @@ TOKEN_PATTERN = re.compile(
     \s*
     (
         \d+(?:\.\d+)?     # number: "10", "3.14"
-        |[A-Za-z_]\w*     # name: variable or function, e.g. "A", "SOLVE"
+        |[A-Za-z_]\w*     # name: variable or function, e.g. "A", "SIN"
         |[+\-*/^(),=|]    # operators, parentheses, comma, equals, condition bar
     )
     """,
@@ -129,7 +129,7 @@ class ExpressionParser:
             operator = self.consume()
             expression = self.parse_unary()
             if operator == "-":
-                return BinaryOperation(Number(0), "-", expression)
+                return BinaryOperation(Number("0"), "-", expression)
             return expression
 
         return self.parse_power()
@@ -156,7 +156,7 @@ class ExpressionParser:
 
         # Leaf: a numeric literal like "3" or "3.14"
         if NUMBER_PATTERN.fullmatch(token):
-            return Number(float(token))
+            return Number(token)
 
         # "(" starts a grouped sub-expression; recurse back to the lowest
         # level so the group is parsed as its own full expression.
@@ -168,52 +168,37 @@ class ExpressionParser:
 
             return expression
 
-        # An identifier is either a variable (Symbol) or a function call.
         if NAME_PATTERN.fullmatch(token):
-
-            # A "(" immediately after the name makes it a call; parse
-            # comma-separated arguments. Each argument recurses to the lowest
-            # level, so "SOLVE(A, B + 1)" allows full expressions per argument.
             if self.current() == "(":
-                self.consume()  # (
-
-                arguments: list[Expression] = []
-
-                if self.current() != ")":
-                    while True:
-                        arguments.append(self.parse_addition())
-
-                        if self.current() == "|":
-                            # DIFF(expression | X=point) uses the same AST as
-                            # DIFF(expression, X, point).
-                            if token.upper() != "DIFF" or len(arguments) != 1:
-                                raise ValueError("Expected DIFF(expression | variable=point)")
-                            self.consume()
-                            variable = self.consume()
-                            if not NAME_PATTERN.fullmatch(variable):
-                                raise ValueError("DIFF variable must be a symbol.")
-                            if self.consume() != "=":
-                                raise ValueError("Expected '=' in DIFF evaluation point.")
-                            arguments.extend([Symbol(variable), self.parse_addition()])
-                            break
-
-                        if self.current() == ",":
-                            self.consume()
-                            continue
-
-                        break
-
-                if self.consume() != ")":
-                    raise ValueError("Expected ')'")
-
-                return FunctionCall(
-                    name=token,
-                    arguments=arguments
-                )
-
+                return self.parse_function_call(token)
             return Symbol(token)
 
         raise ValueError(f"Unexpected token: {token}")
+
+    def parse_function_call(self, name: str) -> FunctionCall:
+        """Parse ordinary arguments and the DIFF evaluation-point shorthand."""
+        self.consume()  # (
+        arguments: list[Expression] = []
+        if self.current() != ")":
+            while True:
+                arguments.append(self.parse_addition())
+                if self.current() == "|":
+                    if name.upper() != "DIFF" or len(arguments) != 1:
+                        raise ValueError("Expected DIFF(expression | variable=point)")
+                    self.consume()
+                    variable = self.consume()
+                    if not NAME_PATTERN.fullmatch(variable):
+                        raise ValueError("DIFF variable must be a symbol.")
+                    if self.consume() != "=":
+                        raise ValueError("Expected '=' in DIFF evaluation point.")
+                    arguments.extend([Symbol(variable), self.parse_addition()])
+                    break
+                if self.current() != ",":
+                    break
+                self.consume()
+        if self.consume() != ")":
+            raise ValueError("Expected ')'")
+        return FunctionCall(name, arguments)
 
 
 def parse_expression(source: str) -> Expression:

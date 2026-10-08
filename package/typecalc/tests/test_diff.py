@@ -2,7 +2,8 @@
 
 import unittest
 
-from typecalc import FunctionCall, Number, Symbol, solve
+from typecalc import solve
+from typecalc.ast import FunctionCall, Number, Symbol
 from typecalc.parser import parse_equation, parse_expression
 
 
@@ -10,7 +11,7 @@ class DiffTests(unittest.TestCase):
     def test_point_syntax_builds_an_ordinary_function_call(self):
         self.assertEqual(
             parse_expression("DIFF(X^2 | X=10)"),
-            FunctionCall("DIFF", [parse_expression("X^2"), Symbol("X"), Number(10)]),
+            FunctionCall("DIFF", [parse_expression("X^2"), Symbol("X"), Number("10")]),
         )
 
     def test_equation_parser_distinguishes_inner_and_outer_equals(self):
@@ -20,7 +21,7 @@ class DiffTests(unittest.TestCase):
         self.assertEqual(equation.right, parse_expression("DIFF(Y^2 | Y=3)"))
 
     def test_idea_example_solves_without_a_global_x(self):
-        equations = ["A + B = 10", "A = DIFF(X^2 | X=10)", "B = SOLVE(B)"]
+        equations = ["A + B = 10", "A = DIFF(X^2 | X=10)"]
         original = equations.copy()
 
         self.assertEqual(solve(equations), {"A": 20, "B": -10})
@@ -45,13 +46,6 @@ class DiffTests(unittest.TestCase):
         equations = ["A = DIFF(DIFF(X^3, X) | X=2)"]
 
         self.assertEqual(solve(equations), {"A": 12})
-
-    def test_diff_and_solve_can_be_nested_in_either_order(self):
-        for expression in ("SOLVE(DIFF(X^2, X))", "DIFF(SOLVE(X^2), X)"):
-            with self.subTest(expression=expression):
-                equations = [f"A = {expression}", "X = 3"]
-
-                self.assertEqual(solve(equations), {"A": 6, "X": 3})
 
     def test_derivative_can_remove_the_need_for_a_variable_value(self):
         for expression, expected in (("DIFF(X, X)", 1), ("DIFF(7, X)", 0)):
@@ -103,7 +97,7 @@ class DiffTests(unittest.TestCase):
             "DIFF(X^2 | X=)",
             "DIFF(X^2 | X=10, Y=2)",
             "DIFF(X^2 | X$=10)",
-            "SOLVE(X | X=10)",
+            "SIN(X | X=10)",
         ):
             with self.subTest(expression=expression):
                 with self.assertRaises(ValueError):

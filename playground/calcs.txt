@@ -1,3 +1,2 @@
 A + B = 10
 A = 6
-B = SOLVE(B)

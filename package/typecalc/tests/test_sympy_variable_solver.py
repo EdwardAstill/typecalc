@@ -14,7 +14,7 @@ class SolveVariablesTests(unittest.TestCase):
         return _solve_equations(parse_equations(equations))
 
     def test_solves_without_changing_the_equation_trees(self):
-        equations = parse_equations(["A + B = 10", "B = SOLVE(B)", "A = 6"])
+        equations = parse_equations(["A + B = 10", "B = B", "A = 6"])
         original = deepcopy(equations)
 
         self.assertEqual(_solve_equations(equations), {"A": 6, "B": 4})
@@ -23,14 +23,14 @@ class SolveVariablesTests(unittest.TestCase):
     def test_solves_simultaneous_equations(self):
         self.assertEqual(self.solve(["X + Y = 10", "X - Y = 2"]), {"X": 6, "Y": 4})
 
-    def test_solve_accepts_expressions_and_nested_calls(self):
+    def test_solve_accepts_expressions_with_function_calls(self):
         self.assertEqual(
-            self.solve(["C = 2 * SOLVE(A + SOLVE(B))", "A = 1", "B = 2"]),
+            self.solve(["C = 2 * (A + ABS(B))", "A = 1", "B = 2"]),
             {"A": 1, "B": 2, "C": 6},
         )
 
     def test_solve_can_reference_a_different_variable(self):
-        self.assertEqual(self.solve(["A = SOLVE(B)", "B = 3"]), {"A": 3, "B": 3})
+        self.assertEqual(self.solve(["A = B", "B = 3"]), {"A": 3, "B": 3})
 
     def test_supports_all_binary_operations(self):
         self.assertEqual(
@@ -53,8 +53,8 @@ class SolveVariablesTests(unittest.TestCase):
     def test_reports_unresolved_variables(self):
         for equations in (
             ["A + B = 10"],
-            ["B = SOLVE(B)"],
-            ["A = 6", "B = SOLVE(B)"],
+            ["B = B"],
+            ["A = 6", "B = B"],
             ["A = A", "B = 2"],
             ["(A + 1)^2 = A^2 + 2*A + 1"],
         ):
@@ -66,7 +66,7 @@ class SolveVariablesTests(unittest.TestCase):
         for equations in (
             ["A = 6", "A = 7"],
             ["A + B = 10", "2*A + 2*B = 21"],
-            ["A = SOLVE(A + 1)"],
+            ["A = A + 1"],
             ["1 = 2"],
         ):
             with self.subTest(equations=equations):
@@ -82,10 +82,10 @@ class SolveVariablesTests(unittest.TestCase):
             with self.subTest(equations=equations):
                 self.assertEqual(self.solve(equations), {})
 
-    def test_solve_requires_one_argument(self):
-        for expression in ("SOLVE()", "SOLVE(A, B)"):
+    def test_removed_solve_wrapper_is_rejected(self):
+        for expression in ("SOLVE()", "SOLVE(A)", "SOLVE(A, B)", "solve(A)"):
             with self.subTest(expression=expression):
-                with self.assertRaisesRegex(ValueError, "exactly one argument"):
+                with self.assertRaisesRegex(ValueError, "Unsupported function"):
                     self.solve(["A = " + expression])
 
     def test_rejects_unsupported_functions(self):

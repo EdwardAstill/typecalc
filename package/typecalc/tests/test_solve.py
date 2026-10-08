@@ -25,6 +25,14 @@ class SolveTests(unittest.TestCase):
 
         self.assertEqual(json.loads(json.dumps(values, allow_nan=False)), {"A": 1 / 3})
 
+    def test_numeric_literals_are_exact_until_final_float_conversion(self):
+        for expression in (
+            "9007199254740993 - 9007199254740992",
+            "(0.1234567890123456789 - 0.1234567890123456788)*10^19",
+        ):
+            with self.subTest(expression=expression):
+                self.assertEqual(solve([f"A = {expression}"]), {"A": 1.0})
+
     def test_reports_unresolved_variables(self):
         with self.assertRaisesRegex(ValueError, "not fully determined"):
             solve(["A + B = 10"])

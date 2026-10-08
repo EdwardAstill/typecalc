@@ -14,8 +14,8 @@ values = solve(["A + B = 10", "A = 6"])
 print(values)  # {'A': 6.0, 'B': 4.0}
 ```
 
-Every solved variable is returned without needing a `SOLVE(B)` marker.
-The result is a Python dictionary, not encoded JSON; serialize it only
+Every solved variable is returned. The result is a Python dictionary,
+not encoded JSON; serialize it only
 when needed:
 
 ```python
@@ -33,14 +33,15 @@ print(json.dumps(solve(["A = 1/3"]), allow_nan=False))
   block headers and prose are rejected.
 - Each call leaves input rows unchanged. Reordering deterministic equations
   does not change the solution; `RAND()` draws new values on each solve.
-- Returned values are finite real floats; fractions and roots may be
-  approximate. Complex or out-of-range results raise `ValueError`.
+- Numeric literals stay exact during solving. Returned values are finite real
+  floats, so fractions and roots may be approximate. Complex or out-of-range
+  results raise `ValueError`.
 - Parse errors raise `ValueError` with the original 1-based input position,
   including blank rows in the count (`Line 3: ...`).
-- Underdetermined, inconsistent, or multiple-solution systems raise
-  `ValueError`. An empty list returns `{}`.
-- Incorrect input types raise `TypeError`. If SymPy cannot solve a system,
-  its `NotImplementedError` propagates; this does not mean there is no solution.
+- No returned solution, unresolved values, or multiple returned solutions
+  raise `ValueError`. An empty list returns `{}`.
+- Incorrect input types raise `TypeError`. Unsupported systems may raise
+  SymPy's `NotImplementedError`; this does not mean there is no solution.
 
 ## Command line
 
@@ -76,20 +77,17 @@ Function names are case-insensitive (`diff` and `DIFF` are the same function).
 
 ## Solving
 
-The solver collects every equation and finds real values for all mentioned
-variables. It requires a unique solution: underdetermined variables raise an
-error listing them.
-
-`SOLVE(X)` denotes the same expression as `X`. `B = SOLVE(B)` means `B = B`,
-so only your other equations constrain `B`:
+The solver sends every equation to SymPy and accepts one returned solution
+with finite real values for all retained global variables:
 
 ```text
 A + B = 10
 A = 6
-B = SOLVE(B)
 ```
 
-This solves to `A = 6` and `B = 4`.
+This solves to `A = 6` and `B = 4`. The old `SOLVE(...)` expression wrapper
+has been removed; write the expression directly and omit identity markers
+such as `B = SOLVE(B)`.
 
 ## Functions
 
@@ -108,7 +106,6 @@ after differentiating and does not assign a global value to `X`:
 ```text
 A + B = 10
 A = DIFF(X^2 | X=10)
-B = SOLVE(B)
 ```
 
 gives `A = 20` and `B = -10`. The third positional argument is an evaluation
@@ -239,28 +236,29 @@ This gives `A = 3.14` and `B = 1200`. Halfway values round to the even digit:
 `ROUND(2.675, 2)` gives `2.68`. This changes the numeric value; it does not
 add trailing zeros to the output.
 
-### SOLVE
-
-`SOLVE` requires exactly one argument and denotes the same expression.
-It is optional when calling the Python `solve` function, which already
-returns every variable's value.
-
 ## Solvability requirements
 
-- Every variable mentioned in an equation must end up uniquely determined,
-  whether by an equation, another variable's value, or an evaluation point.
-  Variables used only inside a `DIFF` evaluation point or as the bound
-  integration variable of `INTEGRATE` do not need global values.
+- Every variable retained after symbolic simplification needs a numeric value.
+  The differentiation variable in `DIFF(expression | X=point)` and the
+  integration variable of `INTEGRATE`
+  do not need global values; variables remaining in the point or bounds do.
 - Symbolic-only results are not supported: a derivative retaining free
   variables is an error unless you supply their values.
 - `solve` returns floats, so fractions and roots may be approximate.
   Results that cannot be stored as a finite real number raise an error.
 
+### Limitations
+
+SymPy may return only principal branches for periodic or transcendental
+equations: `TAN(X) = 0` returns `X = 0`, although other solutions exist.
+Simplification can also discard domain restrictions; `A = LOG(1, B)` with
+`B = 1` currently returns `A = 0` despite the invalid logarithm base.
+
 ## Lower-level Python API
 
-Most callers only need `from typecalc import solve`. For AST inspection,
-`typecalc.parser` exposes `parse_equation`, `parse_expression`,
-and `parse_equations`:
+The package root exports only `solve`. For AST inspection, import node types
+from `typecalc.ast`; `typecalc.parser` exposes `parse_equation`,
+`parse_expression`, and `parse_equations`:
 
 ```python
 from typecalc.parser import parse_equations

@@ -26,11 +26,3 @@ class _Round(sympy.Function):
         if scaled - lower == sympy.Rational(1, 2):
             return (lower + sympy.Mod(lower, 2)) / scale
         return sympy.floor(scaled + sympy.Rational(1, 2)) / scale
-
-
-def round(arguments: list[sympy.Expr]) -> sympy.Expr:
-    """ROUND(value, places); negative places round to tens, hundreds, etc."""
-    if len(arguments) != 2:
-        raise ValueError("ROUND requires a value and an integer number of places.")
-
-    return _Round(*arguments)

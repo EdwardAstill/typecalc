@@ -31,8 +31,8 @@ values = solve(["A + B = 10", "A = 6"])
 print(values)  # {'A': 6.0, 'B': 4.0}
 ```
 
-Each nonblank string must be an equation. Blank strings are ignored, and
-`SOLVE` markers are optional. Block headers and prose are rejected.
+The package root exports only `solve`. Each nonblank string must be an
+equation; blank strings are ignored. Block headers and prose are rejected.
 The input is unchanged, and equation order does not affect deterministic
 solutions. Each occurrence of `RAND()` draws a fresh sample per solve and
 keeps it fixed for that solve.
@@ -60,7 +60,8 @@ parser, adding the original 1-based input line to parse errors.
 
 `Expression` is the union of these types; operations contain two child
 expressions, function calls contain a list of arguments, and numbers and
-symbols are the leaves.
+symbols are the leaves. `Number.value` preserves the numeric token as a
+string, which the solver converts directly to an exact SymPy rational.
 
 An `Equation`, also in `ast.py`, holds a left and a right expression — one
 `lhs = rhs` statement.
@@ -75,9 +76,11 @@ happens only at the public API boundary.
 Variable symbols have the `real=True` assumption, matching the public API's
 real outputs and allowing symbolic `ABS` calls to be solved and differentiated.
 
-A unique solution is required: unresolved variables, inconsistent equations,
-and multiple solutions raise `ValueError`. SymPy's `NotImplementedError`
-propagates when it cannot solve a system.
+The solver delegates to `sympy.solve` and accepts one returned solution with
+finite real values for every retained variable. No solution, unresolved values,
+or multiple returned solutions raise `ValueError`; unsupported systems may
+raise `NotImplementedError`. SymPy may omit branches or simplify away domain
+restrictions; see the [limitations](reference.md#limitations).
 
 Mathematical functions live in `typecalc/functions/`. See the
 [function notes](../package/typecalc/src/typecalc/functions/README.md) for function syntax
