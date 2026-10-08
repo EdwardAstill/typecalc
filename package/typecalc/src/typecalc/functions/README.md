@@ -20,15 +20,14 @@ print(solve(["A = DIFF(X^2 | X=10)", "A + B = 10"]))
 # {'A': 20.0, 'B': -10.0}
 ```
 
-The `EQUATIONS` headers in the examples below belong to the optional document
-format, not the input to `solve`.
+The examples below use one equation per line. Pass each line as a string in
+the list supplied to `solve`, or save the lines in a file for the CLI.
 
 ## DIFF
 
 `diff.py` implements first derivatives using `sympy.diff`.
 
 ```text
-EQUATIONS
 X = 10
 A = DIFF(X^2, X)
 ```
@@ -37,7 +36,6 @@ This finds `A = 20`. To use a local evaluation point without needing a separate
 equation for X:
 
 ```text
-EQUATIONS
 A + B = 10
 A = DIFF(X^2 | X=10)
 B = SOLVE(B)
@@ -45,12 +43,11 @@ B = SOLVE(B)
 
 This finds `A = 20` and `B = -10`. The parser represents the point form as
 `FunctionCall("DIFF", [expression, variable, point])`. The point is substituted
-after differentiation and does not assign a document-wide value to X.
+after differentiation and does not assign a global value to X.
 
 For higher derivatives, nest calls:
 
 ```text
-EQUATIONS
 A = DIFF(DIFF(X^3, X) | X=2)
 ```
 
@@ -59,7 +56,7 @@ The third positional argument is an evaluation point, not a derivative order.
 
 The solver still requires uniquely determined variable values. If a derivative
 retains free variables, provide their values through equations or an evaluation
-point. Symbolic-only document results are not supported yet. The public `solve`
+point. Symbolic-only results are not supported. The public `solve`
 function returns floats, so fractions and roots can be approximate.
 
 ## INTEGRATE
@@ -118,3 +115,46 @@ and nesting inside calculus functions. For example,
 Logarithms require positive values; bases must also be positive and different
 from `1`. These functions preserve symbolic arguments for solving and calculus.
 For example, `LOG(8, 2)` and `LN(EXP(3))` both give `3`.
+
+## ABS
+
+`ABS(value)` takes one argument and uses `sympy.Abs` to return its
+nonnegative magnitude. `ABS(-5)` gives `5`. Solver variables are real so
+symbolic absolute values can be solved, differentiated, and integrated:
+`DIFF(ABS(X) | X=-2)` gives `-1`, and
+`INTEGRATE(ABS(X), X, -1, 1)` gives `1`.
+
+## PI, RAD, DEG
+
+- `PI()` takes no arguments and returns exact `sympy.pi`.
+- `RAD(degrees)` takes one argument and multiplies by `pi/180`.
+- `DEG(radians)` takes one argument and multiplies by `180/pi`.
+
+Conversions preserve exact expressions, so `SIN(RAD(30))` gives `1/2`
+internally and `DEG(PI())` gives `180`. `PI` without parentheses remains
+an ordinary variable name.
+
+## ASIN, ACOS, ATAN, ATAN2
+
+`ASIN(value)`, `ACOS(value)`, and `ATAN(value)` take one argument and use
+their corresponding SymPy functions. They return principal angles in
+radians, with ranges `[-pi/2, pi/2]`, `[0, pi]`, and `(-pi/2, pi/2)`,
+respectively. `ASIN` and `ACOS` require inputs in `[-1, 1]` for real results.
+
+`ATAN2(y, x)` takes two arguments, in y-then-x order, and returns the angle
+in `(-pi, pi]` with the correct quadrant. Both arguments cannot be zero.
+For example, `DEG(ATAN2(1, -1))` gives `135`.
+
+## ROUND
+
+`ROUND(value, places)` takes two arguments. `places` must be an integer:
+positive values round fractional digits, zero rounds to an integer, and
+negative values round to tens, hundreds, etc. Halfway values round to the
+even digit. Examples: `ROUND(2.5, 0)` gives `2`, `ROUND(3.5, 0)` gives `4`,
+and `ROUND(125, -1)` gives `120`.
+
+The internal `_Round` SymPy function defers evaluation until both arguments
+have numeric values, including when they come from other equations. It
+returns exact expressions, so `ROUND(2.675, 2)` gives exactly `67/25`
+internally and `2.68` through the public API. Rounding changes numeric
+values, not output formatting or trailing zeros.

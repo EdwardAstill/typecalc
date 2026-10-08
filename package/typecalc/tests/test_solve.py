@@ -11,6 +11,12 @@ class SolveTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Line 3"):
             solve(["A = 1", "", "B $ C"])
 
+    def test_rejects_headers_and_prose_as_equations(self):
+        for row in ("EQUATIONS", "TEXT", "This is some prose."):
+            with self.subTest(row=row):
+                with self.assertRaisesRegex(ValueError, "Line 2"):
+                    solve(["A = 1", row])
+
     def test_returns_a_value_for_every_variable(self):
         self.assertEqual(solve(["A + B = 10", "", "  ", "A = 6"]), {"A": 6.0, "B": 4.0})
 

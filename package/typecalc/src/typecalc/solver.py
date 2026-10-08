@@ -1,14 +1,45 @@
-"""Solve engine equations for their variable values with SymPy."""
+"""Solve equation strings for finite real values using SymPy."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from math import isfinite
 
 import sympy
 
-from ..ast.equation import Equation
-from ..ast.expressions import BinaryOperation, Expression, FunctionCall, Number, Symbol
-from ..functions import apply_function
+from .ast import BinaryOperation, Equation, Expression, FunctionCall, Number, Symbol
+from .functions import apply_function
+from .parser import parse_equations
+
+
+def solve(equations: Sequence[str]) -> dict[str, float]:
+    """Solve equation strings and return every variable as a finite real float.
+
+    Blank strings are ignored; parse errors identify the 1-based input line.
+    Each call is independent and leaves the input unchanged. Every nonblank
+    row must be an equation. SOLVE markers are optional.
+
+    Raise ValueError for malformed equations, inconsistent or ambiguous
+    systems, unresolved variables, or values outside the finite real float
+    range. Incorrect input types raise TypeError. SymPy's NotImplementedError
+    propagates when it cannot solve a system. Fractions and roots may be
+    approximate; successful results can be serialized with json.dumps.
+    """
+    values = _solve_equations(parse_equations(equations))
+    result: dict[str, float] = {}
+    for name, value in values.items():
+        try:
+            number = float(value)
+        except (TypeError, OverflowError) as error:
+            raise ValueError(
+                f"Value for {name} cannot be stored as a finite real number."
+            ) from error
+        if not isfinite(number):
+            raise ValueError(
+                f"Value for {name} cannot be stored as a finite real number."
+            )
+        result[name] = number
+    return result
 
 
 def _to_sympy(
@@ -20,12 +51,14 @@ def _to_sympy(
             return sympy.Rational(str(value))
 
         case Symbol(name=name):
-            return variables.setdefault(name, sympy.Symbol(name))
-        
+            # The public solver returns real values; ABS also needs this
+            # assumption to solve and differentiate symbolic arguments.
+            return variables.setdefault(name, sympy.Symbol(name, real=True))
+
 
         case BinaryOperation(left=left, operator=operator, right=right):
-            
-            #if it is a binary operation do recursion 
+
+            #if it is a binary operation do recursion
             left = _to_sympy(left, variables)
             right = _to_sympy(right, variables)
 

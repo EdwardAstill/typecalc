@@ -1,10 +1,7 @@
-
-from typecalc.text import parse_document
 from pathlib import Path
 
-parent_dir = Path(__file__).parent
-text_path = parent_dir / 'calcs.txt'
-text = open(text_path, 'r').read()
-print(parse_document(text))
+from typecalc import solve
 
-
+equations_path = Path(__file__).with_name("calcs.txt")
+equations = equations_path.read_text(encoding="utf-8").splitlines()
+print(solve(equations))

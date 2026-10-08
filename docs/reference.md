@@ -1,8 +1,7 @@
 # typecalc Reference
 
-The **engine** (`typecalc`) parses and solves equation strings. The
-**document converter** (`typecalc.text`) handles documents containing
-`EQUATIONS` and `TEXT` blocks. A TUI can call the engine directly.
+`typecalc` parses and solves lists of equation strings. Frontends such as
+the CLI call this same API.
 
 ## Quick start
 
@@ -15,9 +14,9 @@ values = solve(["A + B = 10", "A = 6"])
 print(values)  # {'A': 6.0, 'B': 4.0}
 ```
 
-No document headers, AST construction, or `SOLVE(B)` marker is required.
-Every solved variable is returned. The result is a Python dictionary, not
-encoded JSON; serialize it only when needed:
+Every solved variable is returned without needing a `SOLVE(B)` marker.
+The result is a Python dictionary, not encoded JSON; serialize it only
+when needed:
 
 ```python
 import json
@@ -30,7 +29,8 @@ print(json.dumps(solve(["A = 1/3"]), allow_nan=False))
 ### Input, output, and errors
 
 - Pass a list or another sequence of equation strings, not one multiline
-  string. Blank strings are ignored.
+  string. Blank strings are ignored. Every other row must be an equation;
+  block headers and prose are rejected.
 - Each call leaves input rows unchanged. Reordering deterministic equations
   does not change the solution; `RAND()` draws new values on each solve.
 - Returned values are finite real floats; fractions and roots may be
@@ -65,31 +65,6 @@ Parse errors name the original 1-based line within the supplied input.
 The entry point is `cli/src/typecalc_cli/cli.py`. The experimental TUI and
 its equation catalog remain under `tui`, outside the active workspace.
 
-## Document structure
-
-For equations mixed with prose, use `parse_document` from `typecalc.text`.
-A document is a series of blocks separated by one or more blank lines. The
-first line of each block names its type; these headers are not inputs to
-the engine's `solve`.
-
-```text
-EQUATIONS
-A + B = 10
-A = 6
-B = SOLVE(B)
-
-TEXT
-This is some text to display.
-```
-
-Currently supported block types:
-
-- `EQUATIONS` — every remaining non-empty line is one equation.
-- `TEXT` — remaining lines are kept as plain text. The solver ignores them.
-
-Consecutive blank lines count as a single separator. Leading and trailing
-whitespace of the document is ignored.
-
 ## Equations
 
 Each equation has one outer `=`. Operator precedence and parentheses work as
@@ -101,7 +76,7 @@ Function names are case-insensitive (`diff` and `DIFF` are the same function).
 
 ## Solving
 
-The solver collects every equation and finds values for all mentioned
+The solver collects every equation and finds real values for all mentioned
 variables. It requires a unique solution: underdetermined variables raise an
 error listing them.
 
@@ -109,7 +84,6 @@ error listing them.
 so only your other equations constrain `B`:
 
 ```text
-EQUATIONS
 A + B = 10
 A = 6
 B = SOLVE(B)
@@ -124,16 +98,14 @@ This solves to `A = 6` and `B = 4`.
 `DIFF` takes a function, a variable, and an optional evaluation point:
 
 ```text
-EQUATIONS
 X = 10
 A = DIFF(X^2, X)
 ```
 
 gives `A = 20`. With a local evaluation point (`|`), the point is substituted
-after differentiating and does not assign a document-wide value to `X`:
+after differentiating and does not assign a global value to `X`:
 
 ```text
-EQUATIONS
 A + B = 10
 A = DIFF(X^2 | X=10)
 B = SOLVE(B)
@@ -143,7 +115,6 @@ gives `A = 20` and `B = -10`. The third positional argument is an evaluation
 point, not a derivative order. For higher derivatives, nest calls:
 
 ```text
-EQUATIONS
 A = DIFF(DIFF(X^3, X) | X=2)
 ```
 
@@ -212,6 +183,62 @@ These functions remain symbolic inside `DIFF` and `INTEGRATE`:
 Logarithms require a positive value. A logarithm base must be positive and
 different from `1`. Arguments may be expressions or solved variables.
 
+### ABS
+
+`ABS(value)` returns its nonnegative magnitude: `ABS(-5)` gives `5`.
+It also supports variables constrained by other equations:
+
+```text
+X = -5
+A = ABS(X)
+```
+
+This gives `A = 5`. Absolute values remain symbolic for calculus:
+`INTEGRATE(ABS(X), X, -1, 1)` gives `1`.
+
+### PI, RAD, DEG
+
+- `PI()` takes no arguments and returns pi. It stays exact during solving,
+  so `SIN(PI()/2)` gives exactly `1`.
+- `RAD(degrees)` converts degrees to radians: `RAD(180)` gives pi.
+- `DEG(radians)` converts radians to degrees: `DEG(PI())` gives `180`.
+
+For angles in degrees, write `SIN(RAD(30))` to get `0.5`. Conversions accept
+expressions and solved variables. `PI` without parentheses is still an
+ordinary variable; the constant requires `PI()`.
+
+### ASIN, ACOS, ATAN, ATAN2
+
+Inverse trigonometric functions return their principal angles in radians:
+
+| Function | Result range | Example |
+| --- | --- | --- |
+| `ASIN(value)` | `[-PI()/2, PI()/2]` | `DEG(ASIN(0.5))` gives `30` |
+| `ACOS(value)` | `[0, PI()]` | `DEG(ACOS(0.5))` gives `60` |
+| `ATAN(value)` | `(-PI()/2, PI()/2)` | `DEG(ATAN(1))` gives `45` |
+| `ATAN2(y, x)` | `(-PI(), PI()]` | `DEG(ATAN2(1, -1))` gives `135` |
+
+`ASIN` and `ACOS` require values between `-1` and `1`, inclusive, for real
+results. `ATAN2` takes the **y component first**, accounts for the quadrant,
+and is undefined when both components are zero.
+
+### ROUND
+
+`ROUND(value, places)` rounds to an integer number of decimal places. Both
+arguments are required and may use expressions or solved variables.
+Zero places rounds to an integer; negative places round to tens, hundreds,
+and so on:
+
+```text
+A = ROUND(PI(), 2)
+B = ROUND(1234, -2)
+```
+
+This gives `A = 3.14` and `B = 1200`. Halfway values round to the even digit:
+`ROUND(2.5, 0)` gives `2`, `ROUND(3.5, 0)` gives `4`, and
+`ROUND(2.675, 2)` gives `2.68`. This changes the numeric value; it does not
+add trailing zeros to the output.
+
 ### SOLVE
 
 `SOLVE` requires exactly one argument and denotes the same expression.
@@ -246,32 +273,9 @@ print(equations[0].left.name)  # A
 `solve` accepts strings, not AST nodes; AST-based symbolic solving is an
 internal engine detail.
 
-Document-specific APIs live in `typecalc.text`: `parse_document`
-and `solve_document`. `solve_document` retains exact
-SymPy values for document processing, unlike `solve`'s JSON-ready floats.
-The input document is unchanged.
-
-## Full document example
-
-```python
-from typecalc.text import parse_document, solve_document
-
-text = """EQUATIONS
-A + B = 10
-A = 6
-B = SOLVE(B)
-
-TEXT
-The values are shown above."""
-
-document = parse_document(text)
-print(solve_document(document))    # {'A': 6, 'B': 4}
-print(document.blocks[1].text)     # The values are shown above.
-```
-
 ## Rendering and planned features
 
 Rendering equations and solved values as LaTeX or plots is planned. See
-[the backend guide](backend.md) for the layer layout and
+[the backend guide](backend.md) for the engine layout and
 [the function notes](../package/typecalc/src/typecalc/functions/README.md) for
 function syntax and how to add another function.

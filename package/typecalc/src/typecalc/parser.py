@@ -1,3 +1,44 @@
+"""Tokenize and parse equation strings into expression trees."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+import re
+
+from .ast import BinaryOperation, Equation, Expression, FunctionCall, Number, Symbol
+
+__all__ = ["parse_equation", "parse_equations", "parse_expression"]
+
+
+# One "token" = optional leading whitespace, then a number, a name, or a single
+# operator/punctuation character.
+TOKEN_PATTERN = re.compile(
+    r"""
+    \s*
+    (
+        \d+(?:\.\d+)?     # number: "10", "3.14"
+        |[A-Za-z_]\w*     # name: variable or function, e.g. "A", "SOLVE"
+        |[+\-*/^(),=|]    # operators, parentheses, comma, equals, condition bar
+    )
+    """,
+    re.VERBOSE,
+)
+
+
+def tokenize(source: str) -> list[str]:
+    """Split source text into token strings, e.g. "A + B*2" -> ["A", "+", "B", "*", "2"]."""
+    tokens = TOKEN_PATTERN.findall(source)
+
+    # findall silently skips anything the pattern doesn't match, so a typo like
+    # "A $ B" would vanish. Strip out everything matched; anything left over is
+    # an unknown character -> reject instead of parsing a wrong expression.
+    leftover = TOKEN_PATTERN.sub("", source).strip()
+    if leftover:
+        raise ValueError(f"Unexpected character(s): {leftover!r}")
+
+    return tokens
+
+
 # Recursive-descent parser that turns a token list into an Expression tree.
 #
 # Precedence is encoded in the call chain (lowest binds loosest, so it is
@@ -5,12 +46,6 @@
 # parse_power -> parse_primary. Each level consumes its operators and delegates to
 # the next-higher-precedence level for its operands, which is what makes
 # "A + B * 2" parse as  A + (B * 2)  instead of (A + B) * 2.
-import re
-
-from ..ast.equation import Equation
-from ..ast.expressions import BinaryOperation, Expression, FunctionCall, Number, Symbol
-from .tokenizer import tokenize
-
 NUMBER_PATTERN = re.compile(r"\d+(?:\.\d+)?")
 NAME_PATTERN = re.compile(r"[A-Za-z_]\w*")
 
@@ -202,3 +237,28 @@ def parse_equation(source: str) -> Equation:
         raise ValueError(f"Unexpected token: {parser.current()}")
 
     return Equation(left=left, right=right)
+
+
+def parse_equations(equations: Sequence[str]) -> list[Equation]:
+    """Parse equation strings into engine Equation objects.
+
+    Blank strings are skipped. Raises ValueError naming the 1-based line
+    for any equation that fails to parse.
+    """
+    if isinstance(equations, (str, bytes)):
+        raise TypeError("Expected a sequence of equation strings, not a single string.")
+
+    parsed: list[Equation] = []
+
+    for number, source in enumerate(equations, start=1):
+        if not isinstance(source, str):
+            raise TypeError(f"Line {number}: equation must be a string.")
+        if not source.strip():
+            continue
+
+        try:
+            parsed.append(parse_equation(source))
+        except ValueError as error:
+            raise ValueError(f"Line {number}: {error}") from error
+
+    return parsed

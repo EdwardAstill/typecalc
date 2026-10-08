@@ -1,4 +1,4 @@
-"""Expression trees for equation sides.
+"""Expression trees and equations.
 
 Operations and function calls contain child expressions. Numbers and symbols
 are leaves. The Expression union names all supported node types.
@@ -46,3 +46,11 @@ class FunctionCall:
 
 
 type Expression = Number | Symbol | BinaryOperation | FunctionCall
+
+
+@dataclass
+class Equation:
+    """An ``lhs = rhs`` statement; each side is an Expression tree."""
+
+    left: Expression
+    right: Expression
