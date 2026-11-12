@@ -37,9 +37,11 @@ The input is unchanged, and equation order does not affect deterministic
 solutions. Each occurrence of `RAND()` draws a fresh sample per solve and
 keeps it fixed for that solve.
 
-`solve` returns `dict[str, float]`, not encoded JSON. It rejects complex
-or out-of-range results with `ValueError`, so successful results support
-`json.dumps(values, allow_nan=False)`. Fractions and roots may be approximate.
+`solve` returns `dict[str, float | list[float] | list[list[float]]]`, not
+encoded JSON. Scalars are floats, vectors are lists, and matrices are nested
+lists. It rejects complex or out-of-range components with `ValueError`, so
+successful results support `json.dumps(values, allow_nan=False)`.
+Fractions and roots may be approximate.
 Invalid input types raise `TypeError`.
 
 ### Equation parsing
@@ -57,9 +59,11 @@ parser, adding the original 1-based input line to parse errors.
 - `Symbol`
 - `Number`
 - `FunctionCall`
+- `ArrayLiteral`
 
 `Expression` is the union of these types; operations contain two child
-expressions, function calls contain a list of arguments, and numbers and
+expressions, function calls contain a list of arguments, and array literals
+contain component expressions (nested for matrix rows). Numbers and
 symbols are the leaves. `Number.value` preserves the numeric token as a
 string, which the solver converts directly to an exact SymPy rational.
 
@@ -70,11 +74,26 @@ An `Equation`, also in `ast.py`, holds a left and a right expression — one
 
 The public `solve` parses the strings and calls the internal
 `_solve_equations(equations)` in `solver.py`. This
-AST-based solver retains exact SymPy values; conversion to finite floats
-happens only at the public API boundary.
+AST-based solver retains exact SymPy values; conversion of scalar and array
+components to finite floats happens only at the public API boundary.
 
 Variable symbols have the `real=True` assumption, matching the public API's
 real outputs and allowing symbolic `ABS` calls to be solved and differentiated.
+
+Evaluated `DIFF` and `INTEGRATE` bind a fresh scalar SymPy `Dummy` for
+their expression and variable arguments. Points and bounds use the enclosing
+bindings, and bound symbols never enter the global-variable table.
+
+Named array shapes are discovered before solving from equations with a
+variable alone on one side and an array-valued expression on the other.
+Shape dependencies are resolved independently of equation order; unknown
+dimensions are not inferred through arbitrary equations or unanchored cycles.
+Explicit component names such as `v = [x, y]` allow solving unknown entries.
+Vectors retain their 1D shape rather than becoming one-column matrices.
+Array operations validate ranks and dimensions, without broadcasting.
+Array equalities require identical shapes and become scalar equations for
+corresponding components; named results are reconstructed as lists or nested
+lists. This uses SymPy only, without a NumPy dependency.
 
 The solver delegates to `sympy.solve` and accepts one returned solution with
 finite real values for every retained variable. No solution, unresolved values,

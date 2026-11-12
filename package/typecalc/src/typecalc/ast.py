@@ -33,7 +33,7 @@ class BinaryOperation:
     """
 
     left: Expression
-    operator: str  # one of "+", "-", "*", "/", "^"
+    operator: str  # one of "+", "-", "*", "/", "^", "@"
     right: Expression
 
 
@@ -45,7 +45,14 @@ class FunctionCall:
     arguments: list[Expression]
 
 
-type Expression = Number | Symbol | BinaryOperation | FunctionCall
+@dataclass
+class ArrayLiteral:
+    """A vector or rectangular matrix literal."""
+
+    elements: list[Expression]
+
+
+type Expression = Number | Symbol | BinaryOperation | FunctionCall | ArrayLiteral
 
 
 @dataclass

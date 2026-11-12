@@ -37,6 +37,29 @@ class DiffTests(unittest.TestCase):
 
         self.assertEqual(solve(equations), {"X": 3, "A": 20})
 
+    def test_evaluated_derivative_shadows_arrays_but_not_its_point(self):
+        for expression, expected in (
+            ("DIFF(X^2 | X=3)", 6),
+            ("diff(X^2, X, NORM(X))", 10),
+            ("DIFF(X^2 | X=DOT(X, X))", 50),
+        ):
+            equations = ["X = [3, 4]", f"A = {expression}"]
+            for ordered in (equations, equations[::-1]):
+                with self.subTest(expression=expression, equations=ordered):
+                    self.assertEqual(solve(ordered), {"X": [3, 4], "A": expected})
+
+    def test_nested_same_name_binders_keep_enclosing_point_references(self):
+        for expression, expected in (
+            ("DIFF(DIFF(X^3 | X=X) | X=2)", 12),
+            ("DIFF(INTEGRATE(X^2, X, 0, X) | X=2)", 4),
+        ):
+            with self.subTest(expression=expression):
+                self.assertEqual(solve([f"A = {expression}"]), {"A": expected})
+                self.assertEqual(
+                    solve(["X = [3, 4]", f"A = {expression}"]),
+                    {"X": [3, 4], "A": expected},
+                )
+
     def test_coefficients_and_point_expressions_use_solved_values(self):
         equations = ["A = DIFF(C*X^2 | X=P + 1)", "C = 3", "P = 4"]
 
@@ -83,6 +106,8 @@ class DiffTests(unittest.TestCase):
             ("DIFF(X, X, 1, 2)", "DIFF requires"),
             ("DIFF(X^2, 2)", "variable must be a symbol"),
             ("DIFF(X^2, X + Y)", "variable must be a symbol"),
+            ("DIFF(X^2, 2, 3)", "variable must be a symbol"),
+            ("DIFF(X^2, [X], 3)", "requires scalar arguments"),
         ):
             with self.subTest(expression=expression):
                 equations = [f"A = {expression}"]

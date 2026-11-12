@@ -33,9 +33,11 @@ print(json.dumps(solve(["A = 1/3"]), allow_nan=False))
   block headers and prose are rejected.
 - Each call leaves input rows unchanged. Reordering deterministic equations
   does not change the solution; `RAND()` draws new values on each solve.
-- Numeric literals stay exact during solving. Returned values are finite real
-  floats, so fractions and roots may be approximate. Complex or out-of-range
-  results raise `ValueError`.
+- Numeric literals stay exact during solving. The return type is
+  `dict[str, float | list[float] | list[list[float]]]`: scalars are floats,
+  vectors are lists, and matrices are nested lists. Every component is
+  finite and real; fractions and roots may be approximate. Complex or
+  out-of-range results raise `ValueError`.
 - Parse errors raise `ValueError` with the original 1-based input position,
   including blank rows in the count (`Line 3: ...`).
 - No returned solution, unresolved values, or multiple returned solutions
@@ -75,6 +77,19 @@ expected (`^` is exponentiation). Multiplication must be explicit: write
 Variable names are case-sensitive (`a` and `A` are different variables).
 Function names are case-insensitive (`diff` and `DIFF` are the same function).
 
+See the [operations reference](operations.md) for the complete operator and
+function tables, syntax rules, and examples.
+
+Vectors use `[1, 2]`; matrices use `[[1, 2], [3, 4]]`. Arrays must be
+nonempty and rectangular, with scalar components and at most two dimensions.
+A vector is distinct from a one-row or one-column matrix. `+` and `-`
+require equal shapes, `*` scales or multiplies equal-shaped arrays elementwise,
+and `/` requires a scalar denominator. `^` remains scalar-only. Unary signs
+work on arrays. `@` performs rank-1/rank-2 products and shares the
+left-associative precedence of `*` and `/`; it does not accept scalars.
+There is no broadcasting, indexing, higher-rank support, determinant,
+inverse, or cross-product.
+
 ## Solving
 
 The solver sends every equation to SymPy and accepts one returned solution
@@ -89,7 +104,29 @@ This solves to `A = 6` and `B = 4`. The old `SOLVE(...)` expression wrapper
 has been removed; write the expression directly and omit identity markers
 such as `B = SOLVE(B)`.
 
+Array equalities require identical shapes and constrain each corresponding
+pair of components. Named array shapes are discovered from equations with
+the variable alone on a side and an array-valued expression on the other.
+Definitions and their dependencies may occur in any order, but must lead
+to a known shape; an unanchored cycle does not determine dimensions.
+Dimensions are not inferred from arbitrary product equations. For example,
+use `v = [x, y]` alongside `M@v = [5, 6]` and a declared matrix `M`,
+rather than expecting the product to declare `v`. The solver returns both
+named arrays and retained scalar component variables. See the
+[linear solve example](operations.md#arithmetic-and-syntax).
+
 ## Functions
+
+Scalar functions below reject array arguments, including calculus functions.
+Nest scalar calls in components, such as `[SIN(0), COS(0)]`, instead.
+Array functions are `DOT(v, w)` (equal-length vector dot product),
+`NORM(v)` (Euclidean vector norm), `TRANSPOSE(array)` (matrix transpose,
+1D vectors unchanged), and `ROW(v)`/`COL(v)` (explicit 2D row/column
+conversion). `DOT`, `NORM`, `ROW`, and `COL` require vectors, not matrices.
+
+`NORM` sums squared absolute component values before taking the square root.
+Complex intermediate components are allowed: `NORM([(-1)^(1/2), 1])`
+gives `2^(1/2)`. The returned norm must still be finite and real.
 
 ### DIFF
 
@@ -117,6 +154,11 @@ A = DIFF(DIFF(X^3, X) | X=2)
 
 gives `A = 12`.
 
+With an evaluation point, the differentiation variable is local to its
+expression, even if a global variable of the same name is an array.
+The point uses the enclosing scope: with `X = [3, 4]`,
+`DIFF(X^2 | X=NORM(X))` gives `10`.
+
 ### INTEGRATE
 
 `INTEGRATE(expression, variable, lower, upper)` calculates a definite integral:
@@ -125,10 +167,10 @@ gives `A = 12`.
 A = INTEGRATE(X^2, X, 0, 3)
 ```
 
-This gives `A = 9`. The integration variable is local to the integrand and
-does not need a separate value. A global `X = 10` would remain unchanged and
-would not replace `X` inside this integral. Bounds and coefficients can use
-variables solved by other equations:
+This gives `A = 9`. The integration variable is a local scalar, independent
+of a same-named global scalar or array. Coefficients and bounds use the
+enclosing scope, including bounds that share the integration variable
+name:
 
 ```text
 A = INTEGRATE(C*X, X, 0, B)
@@ -139,6 +181,9 @@ B = 3
 This gives `A = 9`. Reversing the bounds negates the integral; equal bounds
 give zero. Both bounds are required. Calls can be nested, for example
 `INTEGRATE(DIFF(X^3, X), X, 0, 2)` gives `8`.
+
+Nested evaluated derivatives and integrals introduce their own local
+variables; their points and bounds refer to the enclosing scope.
 
 ### RAND
 
@@ -179,6 +224,13 @@ These functions remain symbolic inside `DIFF` and `INTEGRATE`:
 
 Logarithms require a positive value. A logarithm base must be positive and
 different from `1`. Arguments may be expressions or solved variables.
+
+### E
+
+`E()` takes no arguments and returns the exact constant e, approximately
+`2.718281828459045`. `LN(E())` gives `1`. `EXP(1)` remains equivalent.
+Like `PI()`, the parentheses distinguish the constant from a variable:
+bare `E` and `e` remain ordinary, case-sensitive variable names.
 
 ### ABS
 
@@ -244,8 +296,9 @@ add trailing zeros to the output.
   do not need global values; variables remaining in the point or bounds do.
 - Symbolic-only results are not supported: a derivative retaining free
   variables is an error unless you supply their values.
-- `solve` returns floats, so fractions and roots may be approximate.
-  Results that cannot be stored as a finite real number raise an error.
+- `solve` returns floats, lists of floats, or nested lists of floats, so
+  fractions and roots may be approximate. Every array component must also
+  be fully determined and representable as a finite real number.
 
 ### Limitations
 
@@ -277,3 +330,4 @@ Rendering equations and solved values as LaTeX or plots is planned. See
 [the backend guide](backend.md) for the engine layout and
 [the function notes](../package/typecalc/src/typecalc/functions/README.md) for
 function syntax and how to add another function.
+

@@ -4,15 +4,17 @@ Register functions in `FUNCTIONS` in `__init__.py`. Each entry pairs accepted
 argument counts with a callable, for example `"SIN": ((1,), sympy.sin)`.
 Use SymPy functions directly where possible; keep modules here for custom
 behavior such as calculus syntax, validation, randomness, and rounding.
-`apply_function` checks the count and passes SymPy expressions as positional
-arguments. Function names are case-insensitive; variable names remain
-case-sensitive.
+Scalar dispatch checks the count and passes SymPy expressions as positional
+arguments. Scalar functions reject arrays; nest calls in components instead,
+for example `[SIN(0), COS(0)]`. Function names are case-insensitive;
+variable names remain case-sensitive.
 
 The parser records calls as `FunctionCall` nodes. The solver recursively
-converts their arguments and dispatches them through the registry.
+converts their arguments and dispatches scalar and array functions.
 
 `typecalc.solve` accepts equation strings and returns every solved variable
-as a finite real float. For example:
+as a finite real float, a list of floats (vector), or a nested list of floats
+(matrix). For example:
 
 ```python
 from typecalc import solve
@@ -26,6 +28,20 @@ the list supplied to `solve`, or save the lines in a file for the CLI.
 
 Handlers can validate known arguments, but symbolic simplification may discard
 domain restrictions. See the [solver limitations](../../../../../docs/reference.md#limitations).
+
+Array calls are `DOT(v, w)` for equal-length vector dot products,
+`NORM(v)` for the Euclidean vector norm, `TRANSPOSE(array)` for matrix
+transpose (a 1D vector stays unchanged), and `ROW(v)`/`COL(v)` for explicit
+2D row/column conversion. Except for `TRANSPOSE`, these require vectors,
+not matrices. For example, `DOT([1, 2], [3, 4])` gives `11`,
+`NORM([3, 4])` gives `5`, and `COL([1, 2])` gives `[[1], [2]]`.
+Arrays are nonempty and rectangular, with no broadcasting or higher ranks.
+See the [operations reference](../../../../../docs/operations.md) for
+operators, shapes, and named-component solves.
+
+Each array handler has its own module: `dot.py`, `norm.py`, `transpose.py`,
+`row.py`, and `col.py`. Shared shape handling and binary operators remain
+in the engine's `arrays.py`.
 
 ## DIFF
 
@@ -59,7 +75,7 @@ The third positional argument is an evaluation point, not a derivative order.
 
 If a derivative retains free variables, provide their values through equations
 or an evaluation point. Symbolic-only results are not supported. The public `solve`
-function returns floats, so fractions and roots can be approximate.
+function returns floats for scalar results, so fractions and roots can be approximate.
 
 ## INTEGRATE
 
@@ -118,6 +134,12 @@ Logarithms require positive values; bases must also be positive and different
 from `1`. These functions preserve symbolic arguments for solving and calculus.
 For example, `LOG(8, 2)` and `LN(EXP(3))` both give `3`.
 
+## E
+
+`E()` takes no arguments and returns exact `sympy.E`, equivalent to `EXP(1)`.
+`LN(E())` gives `1`. Function names are case-insensitive, so `e()` also works;
+bare `E` and `e` remain ordinary variables.
+
 ## ABS
 
 `ABS(value)` takes one argument and uses `sympy.Abs` to return its
@@ -160,3 +182,4 @@ have numeric values, including when they come from other equations. It
 returns exact expressions, so `ROUND(2.675, 2)` gives exactly `67/25`
 internally and `2.68` through the public API. Rounding changes numeric
 values, not output formatting or trailing zeros.
+

@@ -31,6 +31,12 @@ print(solve(["A + B = 10", "A = 6"]))
 # {'A': 6.0, 'B': 4.0}
 ```
 
+Scalars, 1D vectors (`[1, 2]`), and 2D matrices (`[[1, 2], [3, 4]]`)
+are supported. Use `@` for vector/matrix products and `*` for scalar or
+equal-shape elementwise multiplication; there is no broadcasting.
+Results are finite real floats or lists of floats (nested for matrices).
+See the [operations reference](docs/operations.md) for shapes and linear solves.
+
 For a local clone, add its library directory instead:
 
 ```sh
@@ -103,7 +109,10 @@ uv run --package typecalc python -m unittest discover -s package/typecalc/tests
 uv run --package typecalc-cli python -m unittest discover -s cli/tests
 ```
 
-See the [API reference](docs/reference.md) and [backend notes](docs/backend.md).
+See the [operations reference](docs/operations.md) for
+supported operators, functions, syntax, and limits; the
+[API reference](docs/reference.md) and [backend notes](docs/backend.md)
+cover usage and implementation.
 
 ## Neovim integration
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 import re
 
-from .ast import BinaryOperation, Equation, Expression, FunctionCall, Number, Symbol
+from .ast import ArrayLiteral, BinaryOperation, Equation, Expression, FunctionCall, Number, Symbol
 
 __all__ = ["parse_equation", "parse_equations", "parse_expression"]
 
@@ -18,7 +18,7 @@ TOKEN_PATTERN = re.compile(
     (
         \d+(?:\.\d+)?     # number: "10", "3.14"
         |[A-Za-z_]\w*     # name: variable or function, e.g. "A", "SIN"
-        |[+\-*/^(),=|]    # operators, parentheses, comma, equals, condition bar
+        |[+\-*/^@(),=|\[\]]  # operators and punctuation
     )
     """,
     re.VERBOSE,
@@ -108,10 +108,10 @@ class ExpressionParser:
         return left
 
     def parse_multiplication(self) -> Expression:
-        """Middle precedence: left-associative * and /."""
+        """Middle precedence: left-associative *, /, and @."""
         left = self.parse_unary()
 
-        while self.current() in ("*", "/"):
+        while self.current() in ("*", "/", "@"):
             operator = self.consume()
             right = self.parse_unary()
 
@@ -129,7 +129,7 @@ class ExpressionParser:
             operator = self.consume()
             expression = self.parse_unary()
             if operator == "-":
-                return BinaryOperation(Number("0"), "-", expression)
+                return BinaryOperation(Number("-1"), "*", expression)
             return expression
 
         return self.parse_power()
@@ -167,6 +167,15 @@ class ExpressionParser:
                 raise ValueError("Expected ')'")
 
             return expression
+
+        if token == "[":
+            elements = [self.parse_addition()]
+            while self.current() == ",":
+                self.consume()
+                elements.append(self.parse_addition())
+            if self.consume() != "]":
+                raise ValueError("Expected ']'")
+            return ArrayLiteral(elements)
 
         if NAME_PATTERN.fullmatch(token):
             if self.current() == "(":

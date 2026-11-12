@@ -1,3 +1,11 @@
-A + B = 10
-A = 6
+u = 5
+a = 2
+t = 6
+m = 1200
+
+v = u + a * t
+s = u * t + a * t^2 / 2
+F_net = m * a
+p = m * v
+E_k = m * v^2 / 2
 

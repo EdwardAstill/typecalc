@@ -25,6 +25,7 @@ class ScalarFunctionTests(unittest.TestCase):
             ("ATAN2(1, -1)", 3 * math.pi / 4),
             ("ROUND(PI(), 2)", 3.14),
             ("PI()", math.pi),
+            ("E()", math.e),
             ("SIN(0.5)", math.sin(0.5)),
             ("COS(0.5)", math.cos(0.5)),
             ("TAN(0.5)", math.tan(0.5)),
@@ -37,6 +38,16 @@ class ScalarFunctionTests(unittest.TestCase):
             for source in (expression, expression.lower()):
                 with self.subTest(expression=source):
                     self.assertAlmostEqual(solve([f"A = {source}"])["A"], expected)
+
+    def test_e_constant_is_exact_and_does_not_reserve_variable_names(self):
+        self.assertEqual(
+            solve(["E = 4", "e = 5", "A = LN(E())", "B = E() - EXP(1)"]),
+            {"E": 4, "e": 5, "A": 1, "B": 0},
+        )
+
+    def test_e_constant_rejects_arguments(self):
+        with self.assertRaises(ValueError):
+            solve(["A = E(1)"])
 
     def test_arguments_can_use_variables_solved_by_other_equations(self):
         values = solve([
@@ -247,6 +258,28 @@ class IntegrateTests(unittest.TestCase):
             solve(["X = 10", "A = INTEGRATE(X^2, X, 0, 3)"]),
             {"X": 10, "A": 9},
         )
+
+    def test_bound_variable_shadows_arrays_but_not_the_limits(self):
+        for expression, expected in (
+            ("INTEGRATE(X^2, X, 0, 3)", 9),
+            ("integrate(X, X, 0, NORM(X))", 12.5),
+            ("INTEGRATE(X, X, NORM(X), DOT(X, X))", 300),
+        ):
+            equations = ["X = [3, 4]", f"A = {expression}"]
+            for ordered in (equations, equations[::-1]):
+                with self.subTest(expression=expression, equations=ordered):
+                    self.assertEqual(solve(ordered), {"X": [3, 4], "A": expected})
+
+    def test_nested_same_name_integrals_use_enclosing_bounds_exactly(self):
+        expression = "A = INTEGRATE(INTEGRATE(X, X, 0, X), X, 0, 2)"
+        for equations in ([expression], ["X = [3, 4]", expression], [expression, "X = [3, 4]"]):
+            with self.subTest(equations=equations):
+                expected = {"A": 4 / 3}
+                if len(equations) > 1:
+                    expected["X"] = [3, 4]
+                values = _solve_equations(parse_equations(equations))
+                self.assertEqual(values["A"], Rational(4, 3))
+                self.assertEqual(solve(equations), expected)
 
     def test_coefficients_and_bound_expressions_use_solved_values(self):
         self.assertEqual(

@@ -1,3 +1,10 @@
-A + 10 = 20
+V = 12
+R_1 = 6
+R_2 = 3
+t = 60
 
-
+1 / R_parallel = 1 / R_1 + 1 / R_2
+V = I * R_parallel
+P = V * I
+Q = I * t
+E = P * t
